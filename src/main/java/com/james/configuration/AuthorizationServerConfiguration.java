@@ -25,6 +25,7 @@ import org.springframework.security.oauth2.provider.token.store.InMemoryTokenSto
 import org.springframework.security.oauth2.provider.token.store.JwtAccessTokenConverter;
 import org.springframework.security.oauth2.provider.token.store.JwtTokenStore;
 
+import javax.sql.DataSource;
 import java.util.Arrays;
 
 /**
@@ -33,14 +34,10 @@ import java.util.Arrays;
 @Configuration
 @EnableAuthorizationServer
 public class AuthorizationServerConfiguration extends AuthorizationServerConfigurerAdapter {
-    @Value("${oauth.resourceId}")
-    private String resourceId;
-
-    @Autowired
-    private AuthenticationManager authenticationManager;
-
-    @Autowired
-    private UserDetailsService userDetailsService;
+    @Bean
+    public TokenStore tokenStore() {
+        return new JwtTokenStore(accessTokenConverter());
+    }
 
     @Bean
     public JwtAccessTokenConverter accessTokenConverter() {
@@ -49,54 +46,34 @@ public class AuthorizationServerConfiguration extends AuthorizationServerConfigu
         return converter;
     }
 
-    @Bean
-    public TokenStore tokenStore() {
-        return new JwtTokenStore(accessTokenConverter());
-    }
+    @Autowired
+    @Qualifier("authenticationManagerBean")
+    private AuthenticationManager authenticationManager;
 
     @Override
-    public void configure(AuthorizationServerEndpointsConfigurer endpoints) throws Exception {
+    public void configure(AuthorizationServerEndpointsConfigurer endpoints)
+            throws Exception {
         endpoints
-                .authenticationManager(authenticationManager)
                 .tokenStore(tokenStore())
-                .userDetailsService(userDetailsService)
-                .accessTokenConverter(accessTokenConverter());
+                .authenticationManager(authenticationManager)
+                .tokenEnhancer(accessTokenConverter());
     }
 
     @Override
     public void configure(ClientDetailsServiceConfigurer clients) throws Exception {
-        clients.inMemory()
-                .withClient("trusted-client").secret("password")
-                .authorizedGrantTypes("password", "authorization_code", "refresh_token", "implicit")
-                .authorities("ROLE_CLIENT", "ROLE_TRUSTED_CLIENT")
-                .scopes("read", "write", "trust").resourceIds(resourceId)
-
-                .and()
-
-                .withClient("untrusted-client")
-                .authorizedGrantTypes("client_credentials", "password")
-                .authorities("ROLE_CLIENT").scopes("read").resourceIds(resourceId)
-                .secret("secret");
-    }
-
-//    @Override
-//    public void configure(AuthorizationServerSecurityConfigurer security) throws Exception {
-//        security
-//                .tokenKeyAccess("isAnonymous() || hasAuthority('READ') || hasAuthority('WRITE')")
-//                .checkTokenAccess("hasAuthority('READ') || hasAuthority('WRITE')");
-//    }
-
-    @Bean
-    @Primary
-    public DefaultTokenServices tokenServices() {
-        DefaultTokenServices tokenServices = new DefaultTokenServices();
-        tokenServices.setSupportRefreshToken(true);
-        tokenServices.setTokenStore(new InMemoryTokenStore());
-        return tokenServices;
+        clients
+                .inMemory()
+                .withClient("trusted-client")
+                .scopes("read", "write")
+                .authorities(AuthorityName.ROLE_ADMIN.name(), AuthorityName.ROLE_USER.name())
+                .authorizedGrantTypes("password", "refresh_token", "implicit")
+                .secret("password")
+                .accessTokenValiditySeconds(1800);
     }
 
     @Bean
     protected JwtAccessTokenConverter jwtAccessTokenConverter() {
         return new JwtAccessTokenConverter();
     }
+
 }

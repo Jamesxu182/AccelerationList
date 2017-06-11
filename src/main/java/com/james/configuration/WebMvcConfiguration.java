@@ -10,7 +10,7 @@ import org.springframework.web.servlet.view.JstlView;
 
 /**
  * Created by james on 6/1/17.
- */
+//*/
 @Configuration
 @EnableWebMvc
 public class WebMvcConfiguration extends WebMvcConfigurerAdapter {

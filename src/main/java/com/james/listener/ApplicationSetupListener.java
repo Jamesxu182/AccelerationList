@@ -37,8 +37,8 @@ public class ApplicationSetupListener implements ApplicationListener<ContextRefr
 
     @Override
     public void onApplicationEvent(ContextRefreshedEvent contextRefreshedEvent) {
-        Authority userAuthority = new Authority(AuthorityName.READ);
-        Authority adminAuthority = new Authority(AuthorityName.WRITE);
+        Authority userAuthority = new Authority(AuthorityName.ROLE_USER);
+        Authority adminAuthority = new Authority(AuthorityName.ROLE_ADMIN);
 
         authorityRepository.save(userAuthority);
         authorityRepository.save(adminAuthority);
@@ -52,7 +52,7 @@ public class ApplicationSetupListener implements ApplicationListener<ContextRefr
 
         for(Authority authority : user.getAuthorities())
         {
-            System.out.println(authority.getAuthority());
+            //System.out.println(authority.getAuthority());
         }
     }
 }
